@@ -26,6 +26,12 @@ class AlgoStrategy(gamelib.AlgoCore):
         super().__init__()
         random.seed()
 
+        # initialize stats
+        self.unit_stats = {}
+
+    def init_unit_stats(self, key, index):
+        self.unit_stats[key] = self.config["unitInformation"][index]
+
     def on_game_start(self, config):
         """ 
         Read in config and perform any initial setup here 
@@ -40,6 +46,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         EMP = config["unitInformation"][4]["shorthand"]
         SCRAMBLER = config["unitInformation"][5]["shorthand"]
 
+        gamelib.debug_write(self.config["unitInformation"][2])
+        self.init_unit_stats(FILTER, 0)
+        self.init_unit_stats(ENCRYPTOR, 1)
+        self.init_unit_stats(DESTRUCTOR, 2)
+        self.init_unit_stats(PING, 3)
+        self.init_unit_stats(EMP, 4)
+        self.init_unit_stats(SCRAMBLER, 5)
 
     def on_turn(self, turn_state):
         """
