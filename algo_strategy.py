@@ -51,6 +51,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.prev_attack_from_left = False
         self.prev_add_corner = ''
         
+        self.use_ping_attack = True
+        self.use_emp_attack = False
+        
         # initialize stats
         self.unit_stats = {}
 
@@ -153,10 +156,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         if game_state.get_resource(game_state.BITS) > 15:
             self.attack(game_state)
-        
-        """
-        Final try to refill edges
-        """
+    
     
     def check_default_destructor(self, game_state):
         for location in self.default_middel_desturctor:
@@ -196,11 +196,21 @@ class AlgoStrategy(gamelib.AlgoCore):
                 gamelib.debug_write('Turn[{}] add_extra_corner_destructor() - Spawn at {}'.format(game_state.turn_number, str(location)))
             i = i + 1
         i = 0
-        
+
+    def switch_attack_type(self, game_state):
+        if self.use_ping_attack:
+            self.use_ping_attack = False
+            self.use_emp_attack = True
+            gamelib.debug_write('Turn[{}] switch_attack_type() - switch to EMP'.format(game_state.turn_number))
+        elif self.use_emp_attack:
+            self.use_emp_attack = False
+            self.use_ping_attack = True
+            gamelib.debug_write('Turn[{}] switch_attack_type() - switch to PING'.format(game_state.turn_number))
+
     def attack(self, game_state):
-        if self.space_is_open:
-            self.open_space()
-        
+        #self.open_space()
+        if not self.check_if_space_open(game_state):
+            return 
         location = self.attack_release_location_left
         if self.open_which_side == 'RIGHT':
             location = self.attack_release_location_right
@@ -213,7 +223,13 @@ class AlgoStrategy(gamelib.AlgoCore):
             if game_state.contains_stationary_unit(location):
                 game_state.attempt_remove(location)
         self.space_is_open = True
-        
+    def check_if_space_open(self, game_state):
+        is_open = True
+        for location in self.open_location_right:
+            if game_state.contains_stationary_unit(location):
+                is_open = False
+        return is_open
+    
     def prev_turn_analysis(self, game_state):
         #analysis corner attack
         gamelib.debug_write('Turn[{}] prev_turn_analysis(): prev_left_corner_health = {}'.format(game_state.turn_number, self.prev_left_corner_health))
