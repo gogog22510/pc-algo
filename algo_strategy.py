@@ -32,7 +32,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.open_location_left = [[5, 9], [5, 10]]
         self.open_location_right = [[22,9], [22, 10]]
         
-    
+        # initialize stats
+        self.unit_stats = {}
+
     def init_unit_stats(self, key, index):
         self.unit_stats[key] = self.config["unitInformation"][index]
 
@@ -49,7 +51,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         PING = config["unitInformation"][3]["shorthand"]
         EMP = config["unitInformation"][4]["shorthand"]
         SCRAMBLER = config["unitInformation"][5]["shorthand"]
-        
+
         gamelib.debug_write(self.config["unitInformation"][2])
         self.init_unit_stats(FILTER, 0)
         self.init_unit_stats(ENCRYPTOR, 1)
