@@ -33,6 +33,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.lower_flower = [[7,7], [8,7], [9,7], [10,7], [11,7], [12,7], [13,7], [14,7], [15,7], [16,7], [17,7], [18,7], [19,7], [20,7]]
         self.open_location_left = [[5, 9], [5, 10]]
         self.open_location_right = [[22,9], [22, 10]]
+        self.attack_release_location_left = [5,8]
+        self.attack_release_location_right = [22,8]
+
         self.open_which_side ='LEFT'
         
         self.corner_destructor_left = [[26,13], [25,12], [24,11], [25,13], [24,12], [23,11]]
@@ -148,14 +151,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         Third try to open space and attack
         """
-        if game_state.get_resource(game_state.BITS) > 10:
+        if game_state.get_resource(game_state.BITS) > 15:
             self.attack(game_state)
         
         """
         Final try to refill edges
-        
         """
-        
+    
     def check_default_destructor(self, game_state):
         for location in self.default_middel_desturctor:
             if not game_state.contains_stationary_unit(location):
@@ -199,9 +201,9 @@ class AlgoStrategy(gamelib.AlgoCore):
         if self.space_is_open:
             self.open_space()
         
-        location = self.open_location_left[0]
+        location = self.attack_release_location_left
         if self.open_which_side == 'RIGHT':
-            location = self.open_location_right[0]
+            location = self.attack_release_location_right
         n = game_state.number_affordable(PING)
         if game_state.can_spawn(PING, location):
             game_state.attempt_spawn(PING, location, n)
