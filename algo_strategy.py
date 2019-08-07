@@ -154,7 +154,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         Third try to open space and attack
         """
-        if game_state.get_resource(game_state.BITS) > 15:
+        if game_state.get_resource(game_state.BITS) > 18:
             self.attack(game_state)
     
     
@@ -208,9 +208,9 @@ class AlgoStrategy(gamelib.AlgoCore):
             gamelib.debug_write('Turn[{}] switch_attack_type() - switch to PING'.format(game_state.turn_number))
 
     def attack(self, game_state):
-        #self.open_space()
-        if not self.check_if_space_open(game_state):
-            return 
+        self.open_space()
+        #if not self.check_if_space_open(game_state):
+        #    return 
         location = self.attack_release_location_left
         if self.open_which_side == 'RIGHT':
             location = self.attack_release_location_right
@@ -223,6 +223,7 @@ class AlgoStrategy(gamelib.AlgoCore):
             if game_state.contains_stationary_unit(location):
                 game_state.attempt_remove(location)
         self.space_is_open = True
+        
     def check_if_space_open(self, game_state):
         is_open = True
         for location in self.open_location_right:
