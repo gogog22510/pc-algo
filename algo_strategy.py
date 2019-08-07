@@ -42,6 +42,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         
         self.prev_left_corner_health = 0.0
         self.prev_right_corner_health = 0.0
+        self.left_corner_location = [[0, 13], [1, 13], [1, 12], [2, 13], [2, 12], [2, 11]]
+        self.right_corner_location = [[27, 13], [26, 13], [26, 12], [25, 13], [25, 12], [25, 11]]
         self.prev_attack_from_right = False
         self.prev_attack_from_left = False
         self.prev_add_corner = ''
@@ -197,11 +199,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         if self.space_is_open:
             self.open_space()
         
-        location = self.open_location_left
+        location = self.open_location_left[0]
         if self.open_which_side == 'RIGHT':
-            location = self.open_location_right
+            location = self.open_location_right[0]
         n = game_state.number_affordable(PING)
-        if game_state.can_spawn(location):
+        if game_state.can_spawn(PING, location):
             game_state.attempt_spawn(PING, location, n)
             
     def open_space(self, game_state, side_str='RIGHT'):
