@@ -25,6 +25,16 @@ class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
         super().__init__()
         random.seed()
+        self.init_destructor = [[0, 13], [1, 12], [3, 11], [27, 13], [26, 12], [25, 11]]
+        self.init_middle_destructor = [[6, 10], [9, 10], [12, 10], [15, 10], [18, 10], [21, 10], [24, 10]]
+        self.init_flower = [[4,9],[5,9],[6,9],[7,9],[8,9],[9,9],[10,9],[11,9],[12,9],[13,9],[14,9],[15,9],[16,9],[17,9],[18,9],[19,9],[20,9],[23,9]]
+        
+        self.open_location_left = [[5, 9], [5, 10]]
+        self.open_location_right = [[22,9], [22, 10]]
+        
+    
+    def init_unit_stats(self, key, index):
+        self.unit_stats[key] = self.config["unitInformation"][index]
 
     def on_game_start(self, config):
         """ 
@@ -39,7 +49,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         PING = config["unitInformation"][3]["shorthand"]
         EMP = config["unitInformation"][4]["shorthand"]
         SCRAMBLER = config["unitInformation"][5]["shorthand"]
-
+        
+        gamelib.debug_write(self.config["unitInformation"][2])
+        self.init_unit_stats(FILTER, 0)
+        self.init_unit_stats(ENCRYPTOR, 1)
+        self.init_unit_stats(DESTRUCTOR, 2)
+        self.init_unit_stats(PING, 3)
+        self.init_unit_stats(EMP, 4)
+        self.init_unit_stats(SCRAMBLER, 5)
 
     def on_turn(self, turn_state):
         """
@@ -67,164 +84,44 @@ class AlgoStrategy(gamelib.AlgoCore):
         resources to build and repair the logo before spending them 
         on anything else.
         """
-        self.build_c1_logo(game_state)
+        if game_state.turn_number == 0:
+            self.build_first_round(game_state)
+        else:
+            self.start_pc_strategy(game_state)
 
+    # Our first round move
+    def build_first_round(self, game_state):
         """
-        Then build additional defenses.
+        Set up first round
         """
-        self.build_defences(game_state)
-
-        """
-        Finally deploy our information units to attack.
-        """
-        self.deploy_attackers(game_state)
-
-    # Here we make the C1 Logo!
-    def build_c1_logo(self, game_state):
-        """
-        We use Filter firewalls because they are cheap
-
-        First, we build the letter C.
-        """
-        firewall_locations = [[8, 11], [9, 11], [7,10], [7, 9], [7, 8], [8, 7], [9, 7]]
-        for location in firewall_locations:
-            if game_state.can_spawn(FILTER, location):
-                game_state.attempt_spawn(FILTER, location)
-        
-        """
-        Build the number 1.
-        """
-        firewall_locations = [[17, 11], [18, 11], [18, 10], [18, 9], [18, 8], [17, 7], [18, 7], [19,7]]
-        for location in firewall_locations:
-            if game_state.can_spawn(FILTER, location):
-                game_state.attempt_spawn(FILTER, location)
-
-        """
-        Build 3 dots with destructors so it looks neat.
-        """
-        firewall_locations = [[11, 7], [13, 9], [15, 11]]
-        for location in firewall_locations:
+        gamelib.debug_write('Turn[{}] build_first_round() - start'.format(game_state.turn_number))
+        for location in self.init_destructor:
             if game_state.can_spawn(DESTRUCTOR, location):
                 game_state.attempt_spawn(DESTRUCTOR, location)
-
-    def build_defences(self, game_state):
-        """
-        First lets protect ourselves a little with destructors:
-        """
-        firewall_locations = [[0, 13], [27, 13]]
-        for location in firewall_locations:
+        for location in self.init_middle_destructor:
             if game_state.can_spawn(DESTRUCTOR, location):
                 game_state.attempt_spawn(DESTRUCTOR, location)
+        for location in self.init_flower:
+            uplocation = [location[0], location[1] + 1]
+            if not game_state.contains_stationary_unit(uplocation) and not location in self.open_location_right:
+                if game_state.can_spawn(ENCRYPTOR, location):
+                    game_state.attempt_spawn(ENCRYPTOR, location)
+        
+    def start_pc_strategy(self, game_state):
+        """
+        First check bottom destructor:
+        """
 
-        """
-        Then lets boost our offense by building some encryptors to shield 
-        our information units. Lets put them near the front because the 
-        shields decay over time, so shields closer to the action 
-        are more effective.
-        """
-        firewall_locations = [[3, 11], [4, 11], [5, 11]]
-        for location in firewall_locations:
-            if game_state.can_spawn(ENCRYPTOR, location):
-                game_state.attempt_spawn(ENCRYPTOR, location)
-
-        """
-        Lastly lets build encryptors in random locations. Normally building 
-        randomly is a bad idea but we'll leave it to you to figure out better 
-        strategies. 
-
-        First we get all locations on the bottom half of the map
-        that are in the arena bounds.
-        """
-        all_locations = []
-        for i in range(game_state.ARENA_SIZE):
-            for j in range(math.floor(game_state.ARENA_SIZE / 2)):
-                if (game_state.game_map.in_arena_bounds([i, j])):
-                    all_locations.append([i, j])
         
         """
-        Then we remove locations already occupied.
+        Second try to open space and attack
         """
-        possible_locations = self.filter_blocked_locations(all_locations, game_state)
 
-        """
-        While we have cores to spend, build a random Encryptor.
-        """
-        while game_state.get_resource(game_state.CORES) >= game_state.type_cost(ENCRYPTOR) and len(possible_locations) > 0:
-            # Choose a random location.
-            location_index = random.randint(0, len(possible_locations) - 1)
-            build_location = possible_locations[location_index]
-            """
-            Build it and remove the location since you can't place two 
-            firewalls in the same location.
-            """
-            game_state.attempt_spawn(ENCRYPTOR, build_location)
-            possible_locations.remove(build_location)
-
-    def deploy_attackers(self, game_state):
-        """
-        First lets check if we have 10 bits, if we don't we lets wait for 
-        a turn where we do.
-        """
-        if (game_state.get_resource(game_state.BITS) < 10):
-            return
         
         """
-        First lets deploy an EMP long range unit to destroy firewalls for us.
+        Third try to refill edges
         """
-        if game_state.can_spawn(EMP, [3, 10]):
-            game_state.attempt_spawn(EMP, [3, 10])
 
-        """
-        Now lets send out 3 Pings to hopefully score, we can spawn multiple 
-        information units in the same location.
-        """
-        if game_state.can_spawn(PING, [14, 0], 3):
-            game_state.attempt_spawn(PING, [14,0], 3)
-
-        """
-        NOTE: the locations we used above to spawn information units may become 
-        blocked by our own firewalls. We'll leave it to you to fix that issue 
-        yourselves.
-
-        Lastly lets send out Scramblers to help destroy enemy information units.
-        A complex algo would predict where the enemy is going to send units and 
-        develop its strategy around that. But this algo is simple so lets just 
-        send out scramblers in random locations and hope for the best.
-
-        Firstly information units can only deploy on our edges. So lets get a 
-        list of those locations.
-        """
-        friendly_edges = game_state.game_map.get_edge_locations(game_state.game_map.BOTTOM_LEFT) + game_state.game_map.get_edge_locations(game_state.game_map.BOTTOM_RIGHT)
-        
-        """
-        Remove locations that are blocked by our own firewalls since we can't 
-        deploy units there.
-        """
-        deploy_locations = self.filter_blocked_locations(friendly_edges, game_state)
-        
-        """
-        While we have remaining bits to spend lets send out scramblers randomly.
-        """
-        while game_state.get_resource(game_state.BITS) >= game_state.type_cost(SCRAMBLER) and len(deploy_locations) > 0:
-           
-            """
-            Choose a random deploy location.
-            """
-            deploy_index = random.randint(0, len(deploy_locations) - 1)
-            deploy_location = deploy_locations[deploy_index]
-            
-            game_state.attempt_spawn(SCRAMBLER, deploy_location)
-            """
-            We don't have to remove the location since multiple information 
-            units can occupy the same space.
-            """
-        
-    def filter_blocked_locations(self, locations, game_state):
-        filtered = []
-        for location in locations:
-            if not game_state.contains_stationary_unit(location):
-                filtered.append(location)
-        return filtered
 
 if __name__ == "__main__":
     algo = AlgoStrategy()
